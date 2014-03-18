@@ -17,21 +17,24 @@
 
 {% for name, property in properties.iteritems() %}
 {% if property.type == "string" and property.enum %}
-typedef NS_ENUM(NSInteger, {{ name|capitalize }}Type) {
+typedef NS_ENUM(NSInteger, {{ name|capitalize }}) {
 {% for enum_val in property.enum %}
   {{ enum_val }},
 {% endfor %}
 };
-@property {{ name|capitalize }}Type {{ name }};
+@property (nonatomic, assign) {{ name|capitalize }} {{ name }};
 {% elif property.type == "string" %}
-@property NSString* {{ name }};
+@property (nonatomic, retain) NSString* {{ name }};
 {% elif property.type == "number" %}
-@property NSNumber* {{ name }};
+@property (nonatomic, retain) NSNumber* {{ name }};
 {% else %}
-@property {{ prefix }}{{ property.type|capitalize }}* {{ name }};
+@property (nonatomic, retain) {{ prefix }}{{ property.type|capitalize }}* {{ name }};
 {% endif %}
 
 {% endfor %}
+
++({{ prefix }}{{ name|capitalize }}*){{ name|lower }}WithData:(NSData*)data;
++(NSData*)dataWith{{ name|capitalize }}:({{ prefix }}{{ name|capitalize }}*){{ name|lower }};
 
 - (id)initWithDictionary:(NSDictionary*)dict;
 - (void)deserialize:(NSData*)data;

@@ -26,16 +26,16 @@ def generate(platform, name, definition, schema):
 		# ['object/definition.h', 'object/implementation.m']:
 		template = JINJA_ENVIRONMENT.get_template(platform + '/object/' + template_file)
 
-		properties = definition.get('properties', {})
-		for property_name in properties.iterkeys():
-			property = properties[property_name]
-			# Dereference references to objects and enums
-			if property.get("$ref"):
-				type, = property.get("$ref").split('/')[-1:]
-				ref_property = schema.get('definitions', {}).get(type)
-				if ref_property['type'] == 'object':
-					property['type'] = type
-				elif ref_property['type'] == 'string' and ref_property.get('enum'):
+        properties = definition.get('properties', {})
+        for property_name in properties.iterkeys():
+            property = properties[property_name]
+            # Dereference references to objects and enums
+            if property.get("$ref"):
+                type, = property.get("$ref").split('/')[-1:]
+                ref_property = schema.get('definitions', {}).get(type)
+                if ref_property['type'] == 'object':
+                    property['type'] = type
+                elif ref_property['type'] == 'string' and ref_property.get('enum'):
 					property['type'] = 'string'
 					property['enum'] = ref_property.get('enum')
 

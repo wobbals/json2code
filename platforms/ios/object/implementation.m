@@ -7,14 +7,29 @@
 
 #import "{{ prefix }}{{ name|capitalize }}.h"
 
-
 {% for name, property in properties.iteritems() %}
 {% if property.type == "string" and property.enum %}
-NSDictionary* {{ name }}TypeDictionary = nil;
+NSDictionary* {{ name }}Dictionary = nil;
 {% endif %}
 {% endfor %}
 
-@implementation {{ prefix }}{{ name|capitalize }}
+@implementation {{ prefix }}{{ name|capitalize }} {
+{% for name, property in properties.iteritems() %}
+{% if property.type == "string" and property.enum %}
+    {{ name|capitalize }} _{{ name }};
+{% elif property.type == "string" %}
+    NSString* _{{ name }};
+{% elif property.type == "number" %}
+    NSNumber* _{{ name }};
+{% else %}
+    {{ prefix }}{{ property.type|capitalize }}* _{{ name }};
+{% endif %}
+{% endfor %}
+}
+
+{% for name, property in properties.iteritems() %}
+@synthesize {{ name }} = _{{ name }};
+{% endfor %}
 
 + (void)initialize {
   {% for name, property in properties.iteritems() %}
@@ -29,7 +44,7 @@ NSDictionary* {{ name }}TypeDictionary = nil;
     [NSNumber numberWithInt:{{ enum_val }}],
   {% endfor %}
   nil];
-  {{ name }}TypeDictionary = [NSDictionary dictionaryWithObjects:{{ name }}ObjectArray
+  {{ name }}Dictionary = [NSDictionary dictionaryWithObjects:{{ name }}ObjectArray
                                                          forKeys:{{ name }}KeyArray];
 
   {% endif %}
@@ -41,18 +56,43 @@ NSDictionary* {{ name }}TypeDictionary = nil;
   if (self != nil) {
 {% for name, property in properties.iteritems() %}
 {% if name in required %}
-    if ([dict valueForKey:@"{{ name }}"] == nil) { return nil; }
+    if ([dict valueForKey:@"{{ name }}"] == nil) { 
+		[self release];
+		return nil;
+	}
 {% endif %}
+    if ([dict valueForKey:@"{{ name }}"]) {
 {% if property.type == "string" and property.enum %}
-    self.{{ name }} = [[{{ name }}TypeDictionary objectForKey:[dict valueForKey:@"{{ name }}"]] intValue];
+      _{{ name }} = [[{{ name }}Dictionary objectForKey:[dict valueForKey:@"{{ name }}"]] intValue];
 {% elif property.type == "string" or property.type == "number" %}
-    self.{{ name }} = [dict valueForKey:@"{{ name }}"];
+      _{{ name }} = [[dict valueForKey:@"{{ name }}"] copy];
 {% else %}
-    self.{{ name }} = [dict valueForKey:@"{{ name }}"] ? [[{{ prefix }}{{ property.type|capitalize }} alloc] initWithDictionary:[dict valueForKey:@"{{ name }}"]] : nil;
+      _{{ name }} = [[{{ prefix }}{{ property.type|capitalize }} alloc] initWithDictionary:[dict valueForKey:@"{{ name }}"]];
 {% endif %}
+    }
 {% endfor %}
   }
   return self;
+}
+
+- (void)dealloc {
+{% for name, property in properties.iteritems() %}
+{% if property.type == "string" and property.enum %}
+{% elif property.type == "string" or property.type == "number" %}
+    [_{{ name }} release];
+{% else %}
+    [_{{ name }} release];
+{% endif %}
+{% endfor %}
+    [super dealloc];
+}
+
++({{ prefix }}{{ name|capitalize }}*){{ name|lower }}WithData:(NSData*)data {
+    return nil;
+}
+
++(NSData*)dataWith{{ name|capitalize }}:({{ prefix }}{{ name|capitalize }}*){{ name|lower }} {
+    
 }
 
 - (void)deserialize:(NSData*)data {
